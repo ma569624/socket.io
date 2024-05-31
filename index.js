@@ -1,65 +1,82 @@
 const express = require("express");
 const { createServer } = require("node:http");
-const { join } = require("node:path");
 const { Server } = require("socket.io");
-
+const connectToDatabase = require("./utils/db");
 const app = express();
+app.use(express.json());
+app.set("view engine", "ejs"); // Set EJS as the default view engine
 const server = createServer(app);
-const io = new Server(server, {
-  connectionStateRecovery: {}
+const io = new Server(server);
+const UserList = require("./models/user_list.model");
+const User = require('./models/Users.model')
+
+let Users = [];
+const getuserlist = async () => {
+  await UserList.find();
+
+  // return Users;
+};
+getuserlist();
+
+
+
+const RegisterUsers = async (socket) => {
+  
+  const UserCreatelogs = await User.create({
+    email: 'vhgvhg',
+    name: "bhjhgvhv"
+  });
+  
+  // Users.push({
+  //   socketid: socket.id,
+  //   name: socket.handshake.query.name,
+  //   email: socket.handshake.query.email,
+  //   logintime: socket.handshake.time,
+  //   unread: 3,
+  // });
+};
+
+RegisterUsers();
+
+const SendMessageToUsers = (userinfo) => {
+  const reaciverUser = Users.find((user) => user.name == userinfo);
+  return reaciverUser.socketid;
+};
+
+const DeleteUser = (socket) => {
+  Users.pop({
+    socketid: socket.id,
+  });
+};
+
+io.on("connection", async (socket) => {
+  RegisterUsers(socket);
+  console.log(socket.handshake);
+  io.emit("RagisterUserlist", getuserlist());
+
+  socket.on("getmessageclient", (details) => {
+    console.log(details);
+    const messageWithTime = {
+      sender: details.sender,
+      message: details.msg,
+      time: new Date().toISOString(), // Get current time in ISO format
+    };
+    io.to(SendMessageToUsers(details.name)).emit(
+      "getmessageserver",
+      messageWithTime
+    );
+  });
+
+  socket.on("disconnect", () => {
+    DeleteUser(socket.id);
+  });
 });
 
-app.get("/", (req, res) => {
-  res.sendFile(join(__dirname, "index.html"));
-});
+// io.of("/users").on("connection", (socket) => {
+//     io.emit("RagisterUserlist", getuserlist());
+// });
 
-io.on("connection", (socket) => {
-  console.log("a user connected");
-
-  //   socket.on('disconnect', () => {
-  //     console.log('user disconnected');
-  //   });
-  socket.on("chat message", (msg) => {
-    
-    socket.join("some room");
-
-    // broadcast to all connected clients in the room
-    io.to("some room").emit("hello", "world");
-
-    // broadcast to all connected clients except those in the room
-    io.except("some room").emit("hello", "world");
-
-    // leave the room
-    socket.leave("some room");
-
-    console.log(msg);
-    socket.broadcast.emit("chat message", `${msg} ${socket.id}`);
-    // io.emit("chat message", `${msg} ${socket.id}`);
-    socket.on("disconnect", () => {
-      console.log("user disconnected");
-    });
-  });
-  socket.on("hello", (arg1, arg2, arg3) => {
-    console.log(arg1); // 1
-    console.log(arg2); // '2'
-    console.log(arg3); // { 3: '4', 5: <Buffer 06> }
-  });
-  socket.on("request", (arg1, arg2, callback) => {
-    console.log(arg1); // { foo: 'bar' }
-    console.log(arg2); // 'baz'
-    callback({
-      status: "ok",
-      id: socket.id,
-    });
-  });
-  socket.onAny((eventName, ...args) => {
-    console.log(eventName); // 'hello'
-    console.log(args); // [ 1, '2', { 3: '4', 5: ArrayBuffer (1) [ 6 ] } ]
-  });
-
-  io.to("news").emit("hello");
-});
-
-server.listen(3000, () => {
-  console.log("server running at http://localhost:3000");
+server.listen(4000, async () => {
+  connectToDatabase();
+  console.log("server running at http://localhost:4000");
 });

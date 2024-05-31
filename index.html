@@ -73,30 +73,14 @@
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         if (input.value) {
-          socket.emit("hello", { name: "John" }, "2", {
-            3: "4",
-            5: Uint8Array.from([9]),
-          });
-          socket.emit("chat message", input.value, (response) => {
+          socket.emit("SendMessage", input.value, (response) => {
             console.log(response); // "got it"
           });
-          socket
-            .timeout(5000)
-            .emit("request", { foo: "bar" }, "baz", (err, response) => {
-              if (err) {
-                // the server did not acknowledge the event in the given delay
-                console.log('ack'); // 'ok'
-
-              } else {
-                console.log(response.status); // 'ok'
-                console.log(response.id); // 'ok'
-              }
-            });
           input.value = "";
         }
       });
 
-      socket.on("chat message", (msg) => {
+      socket.on("getMessage", (msg) => {
         console.log(msg);
         const item = document.createElement("li");
         item.textContent = msg;
