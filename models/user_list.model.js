@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 // Define UserList schema
 const userListSchema = new mongoose.Schema(
     { 
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            required: true
+        name: {
+           type: String,
         },
-        logintime: {}
+        email: {
+            type: String,
+        },
     },
     {
         timestamps: true,

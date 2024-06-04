@@ -20,38 +20,32 @@ getuserlist();
 
 
 
-const RegisterUsers = async (socket) => {
-  
-  const UserCreatelogs = await User.create({
-    email: 'vhgvhg',
-    name: "bhjhgvhv"
-  });
-  
-  // Users.push({
-  //   socketid: socket.id,
-  //   name: socket.handshake.query.name,
-  //   email: socket.handshake.query.email,
-  //   logintime: socket.handshake.time,
-  //   unread: 3,
-  // });
+const RegisterUsers = async (socket, id) => {
+  socket.socketid = id
+  const UserCreatelogs = await User.create(socket);
+  console.log(UserCreatelogs)
 };
 
-RegisterUsers();
-
-const SendMessageToUsers = (userinfo) => {
-  const reaciverUser = Users.find((user) => user.name == userinfo);
+const SendMessageToUsers = async (userinfo)  => {
+  const reaciverUser = await User.find(userinfo.name);
+  console.log("user to filter:",userinfo)
+  console.log("user to recived:", reaciverUser[0].socketid)
   return reaciverUser.socketid;
 };
 
-const DeleteUser = (socket) => {
-  Users.pop({
-    socketid: socket.id,
-  });
+const DeleteUser = async (socket)  => {
+  const UserCreatelogs = await User.deleteOne({socketid : socket });
+  console.log(UserCreatelogs)
 };
 
 io.on("connection", async (socket) => {
-  RegisterUsers(socket);
-  console.log(socket.handshake);
+  console.log(socket.handshake.query.name)
+  
+  if (socket.handshake.query.name) {
+    console.log(socket.id)
+    RegisterUsers(socket.handshake.query, socket.id);
+  }
+  
   io.emit("RagisterUserlist", getuserlist());
 
   socket.on("getmessageclient", (details) => {
@@ -61,6 +55,8 @@ io.on("connection", async (socket) => {
       message: details.msg,
       time: new Date().toISOString(), // Get current time in ISO format
     };
+    console.log(details.name);
+
     io.to(SendMessageToUsers(details.name)).emit(
       "getmessageserver",
       messageWithTime
